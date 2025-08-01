@@ -49,6 +49,29 @@ paginate: true
 
 ---
 
+## Passo a passo do desenvolvimento
+
+1. ✅ Criei conta na IBM Cloud e acessei o Watsonx.ai Studio
+2. ✅ Explorei o Prompt Lab com o modelo gratuito `granite-3-3-8b-instruct`
+3. ✅ Validei um prompt base para perguntas sobre financiamento de veículos
+4. ✅ Salvei esse prompt como um **ativo tipo "Modelo de Prompt"** no projeto
+5. ✅ Criei estrutura de projeto local com:
+   - `prompts/base_prompt.txt`
+   - `cli_chatbot/main.py`
+   - `cli_chatbot/watson_client.py`
+6. ✅ Configurei variáveis de ambiente com `.env` e `python-dotenv`
+7. ✅ Integrei o Watsonx via **SDK oficial `ibm-watsonx-ai`** (sem criar endpoint)
+
+---
+
+## Observação sobre o Ativo Criado
+
+- O ativo salvo (`Modelo de Prompt`) no Watsonx Studio **não é um modelo funcional nem um serviço**.
+- Ele funciona como um **repositório de referência**, útil para testes no Prompt Lab.
+- A execução do PoC é feita localmente via SDK, com chamadas diretas ao modelo Granite.
+
+---
+
 ## Conclusão
 
 > A escolha do Watsonx.ai demonstrou domínio de tecnologias emergentes em IA, alinhamento com o propósito do PoC e aproveitamento máximo do tempo disponível.
