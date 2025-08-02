@@ -14,29 +14,22 @@ creds = Credentials(
 )
 
 model = ModelInference(
-    model_id="ibm/granite-3-3-8b-instruct",
+    model_id="mistralai/mistral-medium-2505",
     credentials=creds,
     project_id=PROJECT_ID
 )
 
 def get_default_params():
-    """
-    Retorna os parâmetros de geração padrão compatíveis com o modelo Granite.
-    Comentado para indicar quais são obrigatórios vs opcionais.
-
-    Referência: IBM Watsonx.ai SDK (ModelInference.generate)
-    """
-
     return {
-        "decoding_method": "greedy",        # ✅ Obrigatório (greedy, sample ou beam)
-        "max_new_tokens": 2000,              # ✅ Obrigatório (limite máximo de tokens gerados na resposta)
+        "decoding_method": "greedy",        # Obrigatório
+        "max_new_tokens": 1000,             # Obrigatório
+        "stop_sequences": ["Usuário:"],     # Recomendado
 
-        "temperature": 0,                   # 🔹 Opcional (default = 1.0). Controla a aleatoriedade. 0 = determinístico
-        "top_p": 1.0,                       # 🔹 Opcional (default = 1.0). Nucleus sampling — define a faixa de probabilidade acumulada
-        "repetition_penalty": 1.0,          # 🔹 Opcional (default = 1.0). Penaliza repetições se > 1.0
-
-        "stop_sequences": ["Usuário:"]       # 🔹 Opcional. Força o modelo a parar ao encontrar a sequência especificada
+        # Parâmetros opcionais:
+        "temperature": 0.2,                 # Menor temperatura = mais determinístico
+        "repetition_penalty": 1.1           # Evita repetições excessivas
     }
+
 
 
 def ask_watson(pergunta, chat_history=None):

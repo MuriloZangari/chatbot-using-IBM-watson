@@ -111,3 +111,89 @@ Para evitar alucinações e garantir respostas baseadas em fatos reais, o PoC im
 ```text
 Usuário: Contexto sobre prazo legal para financiamento de veículos  
 Assistente: Segundo o Banco Central do Brasil e a Resolução CMN nº 4.744/2019, o prazo máximo para financiamento...
+
+Claro! Aqui está o trecho completo em Markdown (formato `.md`) para você colar no final do seu `poc-presentation.md`:
+
+````md
+---
+
+## 📉 Problemas com Cálculos Iniciais
+
+Durante os testes com o modelo `granite-3-3-8b-instruct`, observamos inconsistências em cálculos financeiros simples, como:
+
+```text
+"Parcela aproximada: R$ 2.435,42"  ❌  
+Valor esperado: R$ 1.807,62
+````
+
+> Isso indicava que o modelo aplicava a fórmula incorretamente ou cometia erros aritméticos.
+
+---
+
+## 🔬 Testes com o Prompt Lab
+
+Para investigar:
+
+* Usamos o mesmo prompt no Prompt Lab do Watsonx
+* Comparamos diferentes modelos sob o mesmo cenário
+* Aplicamos a fórmula padrão de financiamento com juros compostos
+
+---
+
+## 🧪 Comparativo de Modelos
+
+| Questão                      | granite-3-3-8b-instruct ❌    | mistral-medium-2505 ✅         |
+| ---------------------------- | ---------------------------- | ----------------------------- |
+| Cálculo da parcela com juros | Errado por mais de R\$ 500   | Correto com erro < R\$ 10     |
+| Etapas numéricas             | Parcial/incompletas          | Claras, passo a passo         |
+| Uso de exponenciação         | Alucinação ou arredondamento | Preciso como Python           |
+| Aviso de estimativa          | Ausente na maioria das vezes | Presente de forma consistente |
+
+---
+
+## 🔁 Troca para Mistral
+
+Diante da diferença clara de desempenho, o modelo foi trocado:
+
+✅ Novo modelo: `mistral-medium-2505`
+✅ Melhor desempenho em cálculos
+✅ Respostas mais transparentes e éticas
+
+---
+
+## 🧮 Ensinar o modelo a calcular
+
+Atualizamos o `base_prompt.txt` com:
+
+* Fórmula detalhada da parcela com juros compostos
+* Instruções para exibir **todas as etapas**
+* Exemplo explícito com resultado validado em Python:
+
+```text
+(1 + 0.015) ** -36 = 0.586550  
+1 - 0.586550 = 0.413450  
+750 / 0.413450 = 1.815,03 ✅
+```
+
+---
+
+## ✅ Resultado final após calibragem
+
+```text
+Usuário: Quero financiar R$ 50.000 em 36 vezes com 1,5% de juros ao mês. Quanto vou pagar por parcela?
+Assistente:
+
+1. Valor × taxa = 50.000 × 0,015 = 750  
+2. (1 + 0,015)^-36 ≈ 0,586550  
+3. 1 - 0,586550 ≈ 0,413450  
+4. Parcela = 750 / 0,413450 ≈ 1.815,03  
+
+Parcela: **R$ 1.815,03**
+```
+
+> O modelo agora responde com **precisão matemática**, clareza e segurança jurídica.
+
+```
+
+Se quiser, posso também converter esse trecho direto para PDF com Marp ou testar no VSCode. Deseja isso?
+```

@@ -1,9 +1,11 @@
 import gradio as gr
-from cli_chatbot.watson_client import ask_watson, valida_resposta
+from cli_chatbot.watson_client import ask_watson, valida_resposta, model
 from cli_chatbot.chat_history import get_context
 
 # Estado global da conversa (interno ao modelo)
 chat_history = get_context()
+
+model_name = model.model_id.split("/")[-1]  # Extrai o nome do modelo para exibir na interface
 
 def chatbot_interface(pergunta, history_ui):
     """
@@ -44,18 +46,40 @@ def ver_contexto():
     output = "\n".join(context)
     return [{"role": "assistant", "content": f"📄 Contexto inicial (mini-RAG):\n\n{output}"}]
 
+def ver_prompt_base():
+    """
+    Lê e exibe o conteúdo do prompt base como mensagem do assistente.
+    """
+    try:
+        with open("prompts/base_prompt.txt", "r") as f:
+            prompt_text = f.read()
+    except FileNotFoundError:
+        prompt_text = "⚠️ Arquivo 'base_prompt.txt' não encontrado."
+
+    return [{"role": "assistant", "content": f"📄 **Prompt-base usado no modelo:**\n\n{prompt_text}"}]
+
+
 # Interface Gradio
 with gr.Blocks() as demo:
     gr.Markdown("# 💬 Chatbot de Financiamento de Veículos (Watsonx.ai)")
     gr.Markdown("Digite sua pergunta sobre financiamento, parcelamento ou juros. Ex: `Quero financiar R$ 50.000 em 48x com 1,5% de juros ao mês.`")
-
+    gr.Markdown(f"### Modelo: `{model_name}`")
+    
     chatbot = gr.Chatbot(type="messages")
 
     with gr.Row():
-        msg = gr.Textbox(placeholder="Digite sua pergunta aqui...", show_label=False)
-        enviar = gr.Button("📨 Enviar")
+        msg = gr.Textbox(
+            placeholder="Digite sua pergunta aqui...",
+            show_label=False,
+            scale=8  # ocupa 80% da largura
+        )
+        enviar = gr.Button("📨 Enviar", scale=2)
+
+    with gr.Row():
         clear = gr.Button("🔄 Limpar conversa")
         contexto = gr.Button("📄 Ver contexto")
+        prompt_base = gr.Button("📄 Ver prompt-base")
+
 
     # Enviar pergunta com Enter ou botão
     msg.submit(fn=chatbot_interface, inputs=[msg, chatbot], outputs=[msg, chatbot])
@@ -66,6 +90,9 @@ with gr.Blocks() as demo:
 
     # Ver contexto (mini-RAG)
     contexto.click(fn=ver_contexto, outputs=[chatbot])
+
+    # Ver prompt-base
+    prompt_base.click(fn=ver_prompt_base, outputs=[chatbot])
 
 # Executa servidor local e gera link público
 if __name__ == "__main__":
