@@ -1,6 +1,6 @@
-# Watson AI Vehicle Financing Chatbot (PoC)
+# Watson AI Vehicle Financing Chatbot
 
-A simple proof-of-concept chatbot using IBM Watsonx.ai to answer natural language questions about vehicle financing, installment plans, and interest rates.
+A chatbot using IBM Watsonx.ai to answer natural language questions about vehicle financing, installment plans, and interest rates.
 
 This project explores prompt engineering and integration with the IBM Watsonx.ai platform using the official Python SDK.
 The chatbot supports both **terminal (CLI)** and **web interface (Gradio)** modes and uses a custom prompt with embedded context ("mini-RAG") to reduce hallucinations.
