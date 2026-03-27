@@ -15,11 +15,13 @@ Murilo Zangari
 
 ## Watsonx: Plataformas Consideradas
 
-- **Watson Assistant**  
-  Chatbot com fluxos estruturados, baseado em intents e entidades.
+- **Watson Assistant**: Chatbot com fluxos estruturados, baseado em intents e entidades.
+  - Fluxos definidos de atendimento (FAC, SAC, suporte técnico)
+  - Integração com canais (ex: WhatsApp, Webchat)
 
-- **Watsonx.ai**  
-  Plataforma de IA generativa com foundation models e prompts.
+- **Watsonx.ai**: Plataforma de IA generativa com foundation models e prompts.
+  - Precisa de respostas mais naturais, abertas e inteligentes
+  - Modelos fundacionais (LLMs) para geração de conteúdo, análises, automações com linguagem natural
 
 ---
 
@@ -71,6 +73,7 @@ Murilo Zangari
 
 - O ativo salvo (`Modelo de Prompt`) no Watsonx Studio **não é um modelo funcional nem um serviço**.  
 - Ele funciona como um **repositório de referência**, útil para testes no Prompt Lab.  
+- Reutilização entre projetos
 
 ---
 
@@ -124,3 +127,13 @@ Atualizamos o `base_prompt.txt` com:
 750 / 0.413450 = 1.815,03 ✅
 ```
 
+---
+  
+## Proximos Passos
+
+### Framework LangChain
+ - LangChain é um framework que permite conectar modelos de linguagem (LLMs) a dados, ferramentas e lógica externa para criar aplicações inteligentes com contexto e tomada de decisão.
+   - para transformar o nosso chatbot em um sistema completo e integrado
+   - Memória e context de conversa
+   - RAG
+   - Componentização para reuso e deploy

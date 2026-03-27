@@ -1,11 +1,11 @@
 import gradio as gr
-from cli_chatbot.watson_client import ask_watson, valida_resposta, model
+from cli_chatbot.watson_client import WatsonClientError, ask_watson, get_model_id, valida_resposta
 from cli_chatbot.chat_history import get_context
 
 # Estado global da conversa (interno ao modelo)
 chat_history = get_context()
 
-model_name = model.model_id.split("/")[-1]  # Extrai o nome do modelo para exibir na interface
+model_name = get_model_id().split("/")[-1]  # Extrai o nome do modelo para exibir na interface
 
 def chatbot_interface(pergunta, history_ui):
     """
@@ -15,7 +15,12 @@ def chatbot_interface(pergunta, history_ui):
     global chat_history
 
     # Chamada ao modelo
-    resposta = ask_watson(pergunta, chat_history)
+    try:
+        resposta = ask_watson(pergunta, chat_history)
+    except WatsonClientError as e:
+        history_ui.append({"role": "user", "content": pergunta})
+        history_ui.append({"role": "assistant", "content": f"⚠️ {e.user_message}"})
+        return "", history_ui
 
     # Atualiza histórico interno
     chat_history.append(f"Usuário: {pergunta}")
@@ -24,7 +29,7 @@ def chatbot_interface(pergunta, history_ui):
     # Valida a resposta
     alertas = valida_resposta(resposta['resposta'])
     if alertas:
-        resposta['resposta'] += f"\n\n⚠️ " + "\n".join(alertas)
+        resposta['resposta'] += f"\n\n " + "\n".join(alertas)
 
     # Atualiza histórico da interface Gradio
     history_ui.append({"role": "user", "content": pergunta})
@@ -34,8 +39,11 @@ def chatbot_interface(pergunta, history_ui):
 
 def limpar_chat():
     """
-    Limpa apenas o histórico exibido na interface (não reseta o chat_history).
+    Limpa o histórico exibido na interface e reseta o chat_history interno
+    para o contexto inicial (mini-RAG).
     """
+    global chat_history
+    chat_history = get_context()
     return []
 
 def ver_contexto():
@@ -62,7 +70,7 @@ def ver_prompt_base():
 # Interface Gradio
 with gr.Blocks() as demo:
     gr.Markdown("# 💬 Chatbot de Financiamento de Veículos (Watsonx.ai)")
-    gr.Markdown("Digite sua pergunta sobre financiamento, parcelamento ou juros. Ex: `Quero financiar R$ 50.000 em 48x com 1,5% de juros ao mês.`")
+    gr.Markdown("Digite sua pergunta sobre financiamento, parcelamento ou juros. Ex: `Quero financiar R$ 50.000 em 48x com 1,5% de juros ao mês. Qual seria o valor das parcelas se eu desse uma entrada de R$ 10.000?`")
     gr.Markdown(f"### Modelo: `{model_name}`")
     
     chatbot = gr.Chatbot(type="messages")

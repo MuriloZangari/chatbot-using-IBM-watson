@@ -28,7 +28,7 @@ WATSON_AI/
 ├── cli_chatbot/
 │   ├── main.py              # CLI interface
 │   ├── watson_client.py     # SDK integration with Watsonx
-│   └── chat_context.py      # Mini-RAG contextual memory
+│   └── chat_history.py      # Mini-RAG contextual memory (seed context)
 ├── prompts/
 │   └── base_prompt.txt      # Prompt template
 ├── web_chatbot.py           # Web interface using Gradio
@@ -96,12 +96,13 @@ python web_chatbot.py
 
 * Opens a Gradio interface in your browser.
 * Set `share=True` to generate a public test link.
+* Run this command from the repository root so the relative path `prompts/base_prompt.txt` resolves correctly.
 
 ---
 
 ## 🧠 Model Used
 
-* **Model ID:** `ibm/granite-3-3-8b-instruct`
+* **Model ID (current in code):** `mistralai/mistral-medium-2505`
 * **Decoding:** `greedy`
 * **Parameters:**
 
@@ -116,7 +117,7 @@ python web_chatbot.py
 
 To avoid hallucinations and improve reliability, the chatbot uses a lightweight Retrieval-Augmented Generation (RAG) simulation:
 
-* `chat_context.py` injects curated domain knowledge (e.g., legal financing rules).
+* `chat_history.py` injects curated domain knowledge (e.g., legal financing rules).
 * This context is prepended in every prompt sent to the model.
 * The user can click **"📄 Ver contexto"** in the web interface to inspect it.
 

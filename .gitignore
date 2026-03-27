@@ -1,2 +1,11 @@
 .venv/
 .env
+__pycache__/
+*.pyc
+.gradio/
+.pytest_cache/
+.mypy_cache/
+dist/
+build/
+.ruff_cache/
+.DS_Store

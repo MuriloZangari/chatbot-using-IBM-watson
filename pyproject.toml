@@ -1,0 +1,15 @@
+[project]
+name = "watson-ai-vehicle-financing"
+version = "0.1.0"
+description = "PoC chatbot for vehicle financing using IBM watsonx.ai (CLI + Gradio)."
+readme = "README.md"
+requires-python = ">=3.10"
+dependencies = [
+  "python-dotenv>=1.0.0",
+  "ibm-watsonx-ai>=1.0.0",
+  "gradio>=4.0.0",
+]
+
+[project.scripts]
+watson-cli = "cli_chatbot.main:main"
+
