@@ -75,6 +75,19 @@ WATSONX_API_KEY=your_api_key
 WATSONX_PROJECT_ID=your_project_id
 ```
 
+### Persistência de atendimentos (MongoDB / DocumentDB, opcional)
+
+Se `MONGODB_URI` estiver definido, o app grava **sessões** (`chat_sessions`) e **mensagens** (`chat_messages`) por turno, com `source` = `deterministic`, `llm` ou `error` (fluxo híbrido).
+
+```env
+MONGODB_URI=mongodb://localhost:27017
+MONGODB_DATABASE=watson_ai_chat
+```
+
+Sem `MONGODB_URI`, o chat funciona normalmente e nada é gravado.
+
+No **MongoDB Compass**, conecte com a mesma URI e inspecione o database `MONGODB_DATABASE`.
+
 ---
 
 ## 💬 Run the Chatbot (CLI Mode)
