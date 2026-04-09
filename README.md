@@ -15,7 +15,8 @@ The chatbot supports both **terminal (CLI)** and **web interface (Gradio)** mode
 * ✅ Integration via `ibm-watsonx-ai` SDK (no endpoint required)
 * ✅ Token-based secure authentication via `.env`
 * ✅ Custom model configuration: `temperature`, `stop_sequences`, `repetition_penalty`, etc.
-* ✅ Lightweight "mini-RAG" technique to inject reliable legal context
+* ✅ Contexto legal opcional em `chat_history.py` (seed fixo; desligável com `WATSON_AI_RAG_SKIP_SEED`)
+* ✅ **RAG com retrieval semântico** (`knowledge/corpus`, `cli_chatbot/rag`, embeddings locais)
 * ✅ Modular and extensible Python structure
 * ✅ Fully local execution — no server setup required
 
@@ -26,17 +27,33 @@ The chatbot supports both **terminal (CLI)** and **web interface (Gradio)** mode
 ```bash
 WATSON_AI/
 ├── cli_chatbot/
-│   ├── main.py              # CLI interface
-│   ├── watson_client.py     # SDK integration with Watsonx
-│   └── chat_history.py      # Mini-RAG contextual memory (seed context)
+│   ├── main.py
+│   ├── watson_client.py     # Watsonx + injeção RAG
+│   ├── chat_history.py      # Seed opcional (contexto fixo)
+│   ├── response_router.py   # Determinístico → LLM
+│   ├── calculadora.py
+│   └── rag/
+│       ├── retriever.py
+│       └── corpus_loader.py
+├── knowledge/
+│   ├── corpus/              # JSON chunks para RAG
+│   └── README.md
 ├── prompts/
-│   └── base_prompt.txt      # Prompt template
-├── web_chatbot.py           # Web interface using Gradio
-├── .env                     # API credentials (excluded from Git)
-├── .gitignore
+│   ├── base_prompt.txt
+│   └── rag_instructions.txt
+├── docs/
+│   ├── rag-pipeline.md                    # Fluxo RAG (retrieval)
+│   ├── montagem-do-prompt-llm.md          # O que entra no prompt a cada chamada ao LLM
+│   ├── pontuacao-chunks-e-embeddings.md   # Score, embeddings, tipo de tarefa (ML)
+│   ├── integracao-rag-orquestrador-nestjs.md  # PoC Python ↔ orquestrador TypeScript
+│   ├── parametros-geracao-watsonx.md          # Greedy, temperature, stop_sequences, etc.
+│   └── watson-assistant-orchestrate-hibrido.md  # Assistant SDK vs Orchestrate vs PoC híbrida
+├── scripts/
+│   └── test_rag_retrieval.py  # Testa retrieval sem Watsonx
+├── web_chatbot.py
+├── .env
 ├── requirements.txt
-├── README.md
-└── poc-presentation.md      # Presentation slides (Marp format)
+└── README.md
 ```
 
 ---
@@ -133,6 +150,38 @@ To avoid hallucinations and improve reliability, the chatbot uses a lightweight 
 * `chat_history.py` injects curated domain knowledge (e.g., legal financing rules).
 * This context is prepended in every prompt sent to the model.
 * The user can click **"📄 Ver contexto"** in the web interface to inspect it.
+
+---
+
+## 🔍 RAG real (MVP — corpus + embeddings)
+
+Além do contexto estático acima, o projeto inclui **retrieval semântico** sobre um acervo em JSON:
+
+* **Corpus:** `knowledge/corpus/*.json` — vários arquivos (ex.: financiamento, cobranças/negativação); todos são fundidos num único índice. Detalhes em `knowledge/README.md`.
+* **Embeddings locais:** `sentence-transformers` (modelo padrão `all-MiniLM-L6-v2`); similaridade coseno entre a pergunta e cada chunk.
+* **Prompt:** `watson_client.ask_watson` injeta os top-k trechos (`RAG_TOP_K`, padrão **6**) + `prompts/rag_instructions.txt` antes do histórico e da pergunta. Com vários temas no índice, ajuste `RAG_TOP_K` se necessário.
+
+**Variáveis de ambiente:**
+
+| Variável | Significado |
+|----------|-------------|
+| `WATSON_AI_RAG` | `1` (padrão) liga RAG; `0` desliga. |
+| `WATSON_AI_RAG_SKIP_SEED` | `1` remove o seed de `chat_history` do prompt (teste só retrieval + LLM). |
+| `RAG_TOP_K` | Número de trechos recuperados (padrão `6`; ajuste se o índice crescer ou para reduzir ruído entre temas). |
+| `RAG_EMBEDDING_MODEL` | Modelo Hugging Face para embeddings (opcional). |
+
+Fluxo técnico: **`docs/rag-pipeline.md`** (retrieval). Montagem do prompt completo (base + RAG + histórico): **`docs/montagem-do-prompt-llm.md`**. Parâmetros de geração (watsonx): **`docs/parametros-geracao-watsonx.md`**.
+
+**Testar só o retrieval (sem Watsonx):**
+
+```bash
+python3 scripts/test_rag_retrieval.py "tenho duvida sobre financiamento"
+python3 scripts/test_rag_retrieval.py "estou negativado no serasa"
+```
+
+**Primeira execução:** o modelo de embeddings é baixado (~80 MB).
+
+**Documentação do acervo:** `knowledge/README.md`
 
 ---
 

@@ -56,6 +56,8 @@ def chatbot_interface(pergunta, history_ui):
         print(f"[WEB_DEBUG] source={source} pergunta={pergunta!r}")
         if "debug" in resposta:
             print(f"[WEB_DEBUG] debug={resposta['debug']}")
+        if resposta.get("rag"):
+            print(f"[WEB_DEBUG] rag={resposta['rag']}")
 
     # Atualiza histórico interno
     chat_history.append(f"Usuário: {pergunta}")
@@ -68,10 +70,24 @@ def chatbot_interface(pergunta, history_ui):
 
     resposta_com_badge = f"🔎 Fonte: `{source_label}`\n\n{resposta['resposta']}"
 
+    # Trechos recuperados pelo RAG (apenas ramo LLM), para aprendizado / auditoria
+    if source == "llm" and resposta.get("rag") and resposta["rag"].get("chunks"):
+        rag_lines = []
+        for c in resposta["rag"]["chunks"]:
+            th = c.get("theme")
+            tema = f" — `{th}`" if th else ""
+            rag_lines.append(
+                f"  • `{c.get('id', '?')}` — score {float(c.get('score', 0)):.3f}{tema} — `{c.get('source', '')}`"
+            )
+        resposta_com_badge += "\n\n---\n**Trechos RAG enviados ao modelo:**\n" + "\n".join(rag_lines)
+
     meta: dict = {}
-    if source == "llm" and "debug" in resposta:
-        d = resposta["debug"]
-        meta = {"model_id": d.get("model_id"), "url": d.get("url")}
+    if source == "llm":
+        if "debug" in resposta:
+            d = resposta["debug"]
+            meta = {"model_id": d.get("model_id"), "url": d.get("url")}
+        if resposta.get("rag"):
+            meta = {**meta, "rag": resposta["rag"]}
     elif source == "deterministic":
         meta = {"router": "deterministic_calculator"}
     safe_append_turn(

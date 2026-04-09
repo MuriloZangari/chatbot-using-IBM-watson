@@ -92,16 +92,67 @@ def get_default_params():
 
 
 
+def _rag_enabled() -> bool:
+    return os.getenv("WATSON_AI_RAG", "1").strip().lower() in {"1", "true", "yes", "on"}
+
+
+def _build_rag_section(pergunta: str) -> tuple[str, list | None]:
+    """
+    Monta o bloco de contexto recuperado (RAG) + metadados para debug.
+    Retorna ("", None) se RAG desligado ou indisponível.
+    """
+    if not _rag_enabled():
+        return "", None
+    try:
+        from cli_chatbot.rag.retriever import (
+            format_retrieved_for_prompt,
+            is_rag_available,
+            retrieve_top_k,
+        )
+    except Exception as e:  # pragma: no cover
+        return f"\n\n[AVISO RAG: módulo não carregado: {e}]\n", None
+
+    if not is_rag_available():
+        return (
+            "\n\n[AVISO: RAG habilitado (WATSON_AI_RAG=1) mas `sentence-transformers` não está instalado. "
+            "Execute: pip install sentence-transformers]\n",
+            None,
+        )
+
+    try:
+        retrieved = retrieve_top_k(pergunta)
+    except Exception as e:
+        return f"\n\n[AVISO RAG: falha no retrieval: {e}]\n", None
+
+    # Carrega as instruções do RAG
+    rag_instr_path = os.path.join(os.path.dirname(__file__), "..", "prompts", "rag_instructions.txt")
+    try:
+        rag_instructions = open(rag_instr_path, encoding="utf-8").read()
+    except OSError:
+        rag_instructions = "Use apenas o contexto abaixo quando possível."
+
+    # Formata o contexto recuperado
+    body = format_retrieved_for_prompt(retrieved)
+    section = (
+        f"\n\n### Instruções RAG\n{rag_instructions}\n\n"
+        f"### Contexto recuperado do acervo institucional\n\n{body}\n"
+    )
+    return section, retrieved
+
+
 def ask_watson(pergunta, chat_history=None, debug: bool = False):
     BASE_PROMPT_PATH = os.path.join(os.path.dirname(__file__), "..", "prompts", "base_prompt.txt")
     system_prompt = open(BASE_PROMPT_PATH, encoding="utf-8").read()
 
+    rag_section, retrieved_meta = _build_rag_section(pergunta)
+
     # Junta o histórico da conversa, se houver
     history_text = "\n".join(chat_history) if chat_history else ""
 
-    # Monta o prompt com contexto
+    # Monta o prompt com contexto (RAG + histórico de turnos)
     full_prompt = (
-        f"{system_prompt}\n\n"
+        f"{system_prompt}\n"
+        f"{rag_section}\n"
         f"{history_text}\n"
         f"Usuário: {pergunta}\n"
     )
@@ -133,6 +184,28 @@ def ask_watson(pergunta, chat_history=None, debug: bool = False):
             "url": _get_watsonx_url(),
             "params": params,
             "prompt": full_prompt,
+        }
+        if retrieved_meta is not None:
+            result["debug"]["rag_retrieved"] = [
+                {
+                    "id": r.get("id"),
+                    "score": r.get("score"),
+                    "source": r.get("source"),
+                    "theme": r.get("theme"),
+                }
+                for r in retrieved_meta
+            ]
+    elif retrieved_meta is not None:
+        result["rag"] = {
+            "chunks": [
+                {
+                    "id": r.get("id"),
+                    "score": r.get("score"),
+                    "source": r.get("source"),
+                    "theme": r.get("theme"),
+                }
+                for r in retrieved_meta
+            ]
         }
     return result
 

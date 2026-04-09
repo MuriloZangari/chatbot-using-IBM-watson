@@ -1,0 +1,14 @@
+[
+  {
+    "id": "cob_001",
+    "theme": "cobrancas_comunicacao",
+    "source": "chatbot_fase2_menu_tirar_duvidas_cobrancas",
+    "text": "Se você recebeu alguma comunicação de cobrança (carta, telefone, e-mail ou WhatsApp) e já realizou o pagamento, siga estas orientações:\n\nVerifique a data de envio ou postagem da mensagem ou consulte nosso app para confirmar se ainda existe alguma pendência de pagamento.\n\nCaso o pagamento já tenha sido efetuado recentemente, considere que a compensação bancária pode levar até 3 dias úteis para que o valor seja atualizado em nosso sistema.\n\nSe, após esse período, o débito ainda aparecer como aberto, envie para nossa Central de Atendimento uma cópia do(s) boleto(s) pago(s) e do(s) comprovante(s) de pagamento.\n\ncentralatend-financeira@stellantis.com\n\nNão se esqueça de informar:\nNúmero da(s) parcela(s) paga(s);\nCPF do titular do contrato;\nTelefone para contato;\n\nVamos analisar sua solicitação e retornaremos em até 3 dias úteis.\n\nSe mesmo assim ficar com alguma dúvida, estamos à disposição na nossa Central de Atendimento para te ajudar:\n(11) 3003-4022 – Capitais e Regiões Metropolitanas\n☎ 0800 200 4022 – Demais localidades\nAtendimento: de segunda a sexta-feira, das 8h às 20h (exceto feriados nacionais)."
+  },
+  {
+    "id": "neg_001",
+    "theme": "negativacao",
+    "source": "chatbot_fase2_menu_tirar_duvidas_cobrancas_submenu_negativacoes",
+    "text": "Se a sua dúvida é sobre o seu nome estar negativado nos órgãos de proteção ao crédito, entenda como funciona:\n\nCaso as parcelas não sejam pagas, o CPF do titular do contrato poderá ser registrado em órgãos de proteção ao crédito, como SERASA e SCPC.\n\nApós a quitação das pendências e débitos em aberto, a baixa será realizada automaticamente.\n\nImportante: a exclusão da restrição nos órgãos de proteção ao crédito ocorre em até 5 dias úteis."
+  }
+]

@@ -65,6 +65,15 @@ def main() -> None:
                 print("-------------\n")
 
             print("Bot:", resposta["resposta"])
+            if resposta.get("rag") and resposta["rag"].get("chunks"):
+                print("\n[RAG] Trechos enviados ao modelo:")
+                for c in resposta["rag"]["chunks"]:
+                    th = c.get("theme")
+                    extra = f"  tema={th}" if th else ""
+                    print(
+                        f"  - {c.get('id')}  score={float(c.get('score', 0)):.3f}{extra}  "
+                        f"fonte={c.get('source', '')}"
+                    )
 
             print("-" * 50)
 

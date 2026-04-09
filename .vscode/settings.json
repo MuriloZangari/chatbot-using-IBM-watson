@@ -1,5 +1,8 @@
 {
     "python.analysis.extraPaths": [
         "./cli_chatbot"
+    ],
+    "cursorpyright.analysis.extraPaths": [
+        "./cli_chatbot"
     ]
 }
