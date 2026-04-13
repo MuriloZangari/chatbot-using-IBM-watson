@@ -31,7 +31,6 @@ Campos por chunk (PoC):
 | Variável | Descrição |
 |----------|-----------|
 | `WATSON_AI_RAG` | `1` (padrão) liga RAG; `0` desliga e usa só o prompt base + histórico. |
-| `WATSON_AI_RAG_SKIP_SEED` | `1` remove o contexto fixo de `chat_history.py` do prompt, útil para testar **só** retrieval + LLM. |
 | `RAG_TOP_K` | Trechos enviados ao prompt (padrão `6`). Com **vários temas** no índice, valores menores (ex.: `2`–`3`) reduzem ruído; o tamanho do índice cresce conforme novos `.json` em `corpus/`. |
 | `RAG_EMBEDDING_MODEL` | Modelo Hugging Face para embeddings (padrão: `sentence-transformers/all-MiniLM-L6-v2`). Na primeira execução o modelo é baixado (~80 MB). |
 

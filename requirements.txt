@@ -1,4 +1,5 @@
 python-dotenv>=1.0.0
+ibm-watson>=11.0.0
 ibm-watsonx-ai>=1.0.0
 gradio>=4.0.0
 pymongo>=4.6.0

@@ -1,24 +1,24 @@
 import gradio as gr
 import os
 from cli_chatbot.watson_client import WatsonClientError, get_model_id, valida_resposta
-from cli_chatbot.chat_history import get_context
-from cli_chatbot.response_router import gerar_resposta
+from cli_chatbot.hybrid_router import gerar_resposta_roteada
 from cli_chatbot.persistence.chat_repository import get_chat_repository, safe_append_turn
 
-# Estado global da conversa (interno ao modelo)
-chat_history = get_context()
+# Histórico em texto para o ramo LLM (turnos anteriores); sem seed fixo.
+chat_history: list[str] = []
 # Sessão de atendimento (MongoDB); None até a primeira mensagem ou se persistência desligada
 current_session_id = None
+# Watson Assistant: mesma conversa API entre mensagens (session_id interno da IBM)
+wa_assistant_conv = None
 
 model_name = get_model_id().split("/")[-1]  # Extrai o nome do modelo para exibir na interface
 WEB_DEBUG = os.getenv("WEB_DEBUG", "").strip().lower() in {"1", "true", "yes", "on"}
 
-def chatbot_interface(pergunta, history_ui):
+def chatbot_interface(pergunta, history_ui, modo):
     """
-    Manipula a entrada do usuário, envia para o modelo Watsonx,
-    valida a resposta e atualiza o histórico exibido na interface.
+    Roteia por `modo`: Watson Assistant (fluxos) ou LLM+RAG (watsonx).
     """
-    global chat_history, current_session_id
+    global chat_history, current_session_id, wa_assistant_conv
 
     repo = get_chat_repository()
     if repo and current_session_id is None:
@@ -30,9 +30,14 @@ def chatbot_interface(pergunta, history_ui):
             if WEB_DEBUG:
                 print(f"[persistência] Falha ao iniciar sessão: {ex}")
 
-    # Chamada ao modelo
     try:
-        resposta = gerar_resposta(pergunta, chat_history=chat_history, debug=WEB_DEBUG)
+        resposta, wa_assistant_conv = gerar_resposta_roteada(
+            pergunta,
+            modo=modo,
+            wa_conv=wa_assistant_conv,
+            chat_history=chat_history,
+            debug=WEB_DEBUG,
+        )
     except WatsonClientError as e:
         history_ui.append({"role": "user", "content": pergunta})
         history_ui.append({"role": "assistant", "content": f"⚠️ {e.user_message}"})
@@ -50,10 +55,30 @@ def chatbot_interface(pergunta, history_ui):
         )
         return "", history_ui
 
+    if resposta.get("source") == "error":
+        history_ui.append({"role": "user", "content": pergunta})
+        history_ui.append({"role": "assistant", "content": f"⚠️ {resposta['resposta']}"})
+        safe_append_turn(
+            repo,
+            current_session_id,
+            user_content=pergunta,
+            assistant_content=f"⚠️ {resposta['resposta']}",
+            source="error",
+            assistant_metadata=None,
+        )
+        return "", history_ui
+
     source = resposta.get("source", "unknown")
-    source_label = "determinístico" if source == "deterministic" else "llm"
+    if source == "deterministic":
+        source_label = "determinístico"
+    elif source == "llm":
+        source_label = "llm"
+    elif source == "assistant":
+        source_label = "watson assistant"
+    else:
+        source_label = str(source)
     if WEB_DEBUG:
-        print(f"[WEB_DEBUG] source={source} pergunta={pergunta!r}")
+        print(f"[WEB_DEBUG] source={source} modo={modo!r} pergunta={pergunta!r}")
         if "debug" in resposta:
             print(f"[WEB_DEBUG] debug={resposta['debug']}")
         if resposta.get("rag"):
@@ -69,6 +94,15 @@ def chatbot_interface(pergunta, history_ui):
         resposta['resposta'] += f"\n\n " + "\n".join(alertas)
 
     resposta_com_badge = f"🔎 Fonte: `{source_label}`\n\n{resposta['resposta']}"
+
+    # Intents do Watson Assistant (debug), alinhado ao script CLI
+    if source == "assistant" and resposta.get("wa_intents"):
+        intent_lines = []
+        for it in resposta["wa_intents"]:
+            conf = it.get("confidence")
+            conf_s = str(conf) if conf is not None else "—"
+            intent_lines.append(f"  • `{it.get('intent', '?')}`: {conf_s}")
+        resposta_com_badge += "\n\n---\n**Intents (debug):**\n" + "\n".join(intent_lines)
 
     # Trechos recuperados pelo RAG (apenas ramo LLM), para aprendizado / auditoria
     if source == "llm" and resposta.get("rag") and resposta["rag"].get("chunks"):
@@ -90,6 +124,11 @@ def chatbot_interface(pergunta, history_ui):
             meta = {**meta, "rag": resposta["rag"]}
     elif source == "deterministic":
         meta = {"router": "deterministic_calculator"}
+    elif source == "assistant":
+        meta = {
+            "wa_session_id": resposta.get("wa_session_id"),
+            "wa_intents": resposta.get("wa_intents"),
+        }
     safe_append_turn(
         repo,
         current_session_id,
@@ -106,11 +145,8 @@ def chatbot_interface(pergunta, history_ui):
     return "", history_ui
 
 def limpar_chat():
-    """
-    Limpa o histórico exibido na interface e reseta o chat_history interno
-    para o contexto inicial (mini-RAG).
-    """
-    global chat_history, current_session_id
+    """Limpa o histórico exibido e o histórico interno usado no prompt do LLM."""
+    global chat_history, current_session_id, wa_assistant_conv
     repo = get_chat_repository()
     if repo and current_session_id:
         try:
@@ -121,16 +157,9 @@ def limpar_chat():
             if WEB_DEBUG:
                 print(f"[persistência] Falha ao encerrar sessão: {ex}")
     current_session_id = None
-    chat_history = get_context()
+    wa_assistant_conv = None
+    chat_history = []
     return []
-
-def ver_contexto():
-    """
-    Mostra o conteúdo atual do contexto interno usado no modelo.
-    """
-    context = get_context()
-    output = "\n".join(context)
-    return [{"role": "assistant", "content": f"📄 Contexto inicial (mini-RAG):\n\n{output}"}]
 
 def ver_prompt_base():
     """
@@ -147,10 +176,22 @@ def ver_prompt_base():
 
 # Interface Gradio
 with gr.Blocks() as demo:
-    gr.Markdown("# 💬 Chatbot de Financiamento de Veículos (Watsonx.ai)")
-    gr.Markdown("Digite sua pergunta sobre financiamento, parcelamento ou juros. Ex: `Quero financiar R$ 50.000 em 48x com 1,5% de juros ao mês. Qual seria o valor das parcelas se eu desse uma entrada de R$ 10.000?`")
-    gr.Markdown(f"### Modelo: `{model_name}`")
-    
+    gr.Markdown("# 💬 PoC — Watson Assistant + watsonx (LLM/RAG)")
+    gr.Markdown(
+        "**Assistente:** fluxos modelados no Watson Assistant (menus, segunda via, etc.). "
+        "**Acervo:** perguntas abertas com RAG + watsonx (calculadora continua no ramo Acervo quando aplicável)."
+    )
+    gr.Markdown(f"### Modelo watsonx (ramo Acervo): `{model_name}`")
+
+    modo = gr.Radio(
+        choices=[
+            ("Assistente — fluxos (Watson Assistant)", "assistant"),
+            ("Acervo — LLM + RAG (watsonx)", "llm_rag"),
+        ],
+        value="assistant",
+        label="Onde enviar a próxima mensagem",
+    )
+
     chatbot = gr.Chatbot(type="messages", height=650)
 
     with gr.Row():
@@ -163,19 +204,15 @@ with gr.Blocks() as demo:
 
     with gr.Row():
         clear = gr.Button("🔄 Limpar conversa")
-        contexto = gr.Button("📄 Ver contexto")
         prompt_base = gr.Button("📄 Ver prompt-base")
 
 
     # Enviar pergunta com Enter ou botão
-    msg.submit(fn=chatbot_interface, inputs=[msg, chatbot], outputs=[msg, chatbot])
-    enviar.click(fn=chatbot_interface, inputs=[msg, chatbot], outputs=[msg, chatbot])
+    msg.submit(fn=chatbot_interface, inputs=[msg, chatbot, modo], outputs=[msg, chatbot])
+    enviar.click(fn=chatbot_interface, inputs=[msg, chatbot, modo], outputs=[msg, chatbot])
 
     # Limpar interface
     clear.click(fn=limpar_chat, outputs=[chatbot])
-
-    # Ver contexto (mini-RAG)
-    contexto.click(fn=ver_contexto, outputs=[chatbot])
 
     # Ver prompt-base
     prompt_base.click(fn=ver_prompt_base, outputs=[chatbot])

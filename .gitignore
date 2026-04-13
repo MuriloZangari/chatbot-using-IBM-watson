@@ -1,5 +1,6 @@
 .venv/
 .env
+ibm-credentials*.env
 __pycache__/
 *.pyc
 .gradio/

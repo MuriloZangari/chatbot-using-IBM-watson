@@ -3,7 +3,7 @@
 A chatbot using IBM Watsonx.ai to answer natural language questions about vehicle financing, installment plans, and interest rates.
 
 This project explores prompt engineering and integration with the IBM Watsonx.ai platform using the official Python SDK.
-The chatbot supports both **terminal (CLI)** and **web interface (Gradio)** modes and uses a custom prompt with embedded context ("mini-RAG") to reduce hallucinations.
+The chatbot supports both **terminal (CLI)** and **web interface (Gradio)** modes and uses **RAG** over a JSON corpus plus optional conversation history in the prompt.
 
 ---
 
@@ -29,7 +29,7 @@ WATSON_AI/
 ├── cli_chatbot/
 │   ├── main.py
 │   ├── watson_client.py     # Watsonx + injeção RAG
-│   ├── chat_history.py      # Seed opcional (contexto fixo)
+│   ├── hybrid_router.py     # Assistant ↔ LLM+RAG (web)
 │   ├── response_router.py   # Determinístico → LLM
 │   ├── calculadora.py
 │   └── rag/
@@ -47,9 +47,14 @@ WATSON_AI/
 │   ├── pontuacao-chunks-e-embeddings.md   # Score, embeddings, tipo de tarefa (ML)
 │   ├── integracao-rag-orquestrador-nestjs.md  # PoC Python ↔ orquestrador TypeScript
 │   ├── parametros-geracao-watsonx.md          # Greedy, temperature, stop_sequences, etc.
-│   └── watson-assistant-orchestrate-hibrido.md  # Assistant SDK vs Orchestrate vs PoC híbrida
+│   ├── watson-assistant-orchestrate-hibrido.md  # Assistant SDK vs Orchestrate vs PoC híbrida
+│   ├── proposta-arquitetura-hibrida-poc.md      # Fluxo: actions + search + CTA (proposta)
+│   ├── plano-de-acao-poc-hibrida.md             # Etapas 0–6: Assistant, SDK, consolidação
+│   ├── guia-poc-watson-assistant-ui.md          # Checklist: primeiro fluxo no Assistant (UI)
+│   └── roteamento-assistant-llm-poc.md          # Assistant ↔ LLM+RAG e retorno ao fluxo
 ├── scripts/
-│   └── test_rag_retrieval.py  # Testa retrieval sem Watsonx
+│   ├── test_rag_retrieval.py  # Testa retrieval sem Watsonx
+│   └── test_watson_assistant_message.py  # Assistant API v2 (sessão multi-turn)
 ├── web_chatbot.py
 ├── .env
 ├── requirements.txt
@@ -143,19 +148,15 @@ python web_chatbot.py
 
 ---
 
-## 📄 Mini-RAG Strategy
+## 📄 Histórico no prompt (LLM)
 
-To avoid hallucinations and improve reliability, the chatbot uses a lightweight Retrieval-Augmented Generation (RAG) simulation:
-
-* `chat_history.py` injects curated domain knowledge (e.g., legal financing rules).
-* This context is prepended in every prompt sent to the model.
-* The user can click **"📄 Ver contexto"** in the web interface to inspect it.
+Turnos anteriores da sessão entram como texto no prompt do ramo LLM.
 
 ---
 
-## 🔍 RAG real (MVP — corpus + embeddings)
+## 🔍 RAG (MVP — corpus + embeddings)
 
-Além do contexto estático acima, o projeto inclui **retrieval semântico** sobre um acervo em JSON:
+O projeto usa **retrieval semântico** sobre um acervo em JSON:
 
 * **Corpus:** `knowledge/corpus/*.json` — vários arquivos (ex.: financiamento, cobranças/negativação); todos são fundidos num único índice. Detalhes em `knowledge/README.md`.
 * **Embeddings locais:** `sentence-transformers` (modelo padrão `all-MiniLM-L6-v2`); similaridade coseno entre a pergunta e cada chunk.
@@ -166,7 +167,6 @@ Além do contexto estático acima, o projeto inclui **retrieval semântico** sob
 | Variável | Significado |
 |----------|-------------|
 | `WATSON_AI_RAG` | `1` (padrão) liga RAG; `0` desliga. |
-| `WATSON_AI_RAG_SKIP_SEED` | `1` remove o seed de `chat_history` do prompt (teste só retrieval + LLM). |
 | `RAG_TOP_K` | Número de trechos recuperados (padrão `6`; ajuste se o índice crescer ou para reduzir ruído entre temas). |
 | `RAG_EMBEDDING_MODEL` | Modelo Hugging Face para embeddings (opcional). |
 

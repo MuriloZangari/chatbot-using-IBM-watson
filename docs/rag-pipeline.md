@@ -6,9 +6,7 @@
 2. **Embeddings** — cada chunk vira um vetor com `sentence-transformers` (modelo configurável via `RAG_EMBEDDING_MODEL`).
 3. **Consulta** — a pergunta do usuário vira vetor; calcula-se **similaridade coseno** com todos os chunks.
 4. **Top-K** — os `RAG_TOP_K` trechos com maior similaridade entram no prompt (padrão **6**; com índice pequeno, o efeito prático é limitado ao número de chunks existentes). Com vários temas, reduza `RAG_TOP_K` se quiser menos trechos concorrentes no prompt.
-5. **Geração** — o modelo LLM responde **condicionado** a esse contexto (não é só prompt fixo como o seed em `chat_history.py`).
-
-Isso difere do “mini-RAG” antigo (apenas um parágrafo fixo em `chat_history.py`): o retrieval **escolhe** trechos conforme a pergunta.
+5. **Geração** — o modelo LLM responde **condicionado** a esse contexto (trechos escolhidos pela pergunta, não texto fixo genérico).
 
 **Como isso entra no prompt completo enviado ao LLM** (base + RAG + histórico + pergunta): ver **`docs/montagem-do-prompt-llm.md`**.
 
@@ -25,7 +23,6 @@ Isso difere do “mini-RAG” antigo (apenas um parágrafo fixo em `chat_history
 | Retrieval | `cli_chatbot/rag/retriever.py` (`retrieve_top_k`, `format_retrieved_for_prompt`) |
 | Injeção no prompt | `cli_chatbot/watson_client.py` (`_build_rag_section` → `ask_watson`) |
 | Desligar RAG | `.env`: `WATSON_AI_RAG=0` |
-| Teste só RAG + LLM | `.env`: `WATSON_AI_RAG_SKIP_SEED=1` (não injeta o seed legal do `chat_history`) |
 
 ## Perguntas de teste sugeridas
 

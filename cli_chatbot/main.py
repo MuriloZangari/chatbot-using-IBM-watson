@@ -1,7 +1,6 @@
 import argparse
 from cli_chatbot.watson_client import WatsonClientError
 from cli_chatbot.watson_client import valida_resposta
-from cli_chatbot.chat_history import get_context
 from cli_chatbot.response_router import gerar_resposta
 from cli_chatbot.persistence.chat_repository import get_chat_repository, safe_append_turn
 
@@ -18,8 +17,7 @@ def main() -> None:
     print("🤖 Chatbot de Financiamento de Veículos (Watsonx.ai)")
     print("Digite 'sair' para encerrar.\n")
 
-    # 🔰 Carrega o contexto inicial da conversa
-    chat_history = get_context()
+    chat_history: list[str] = []
 
     repo = get_chat_repository()
     session_id = repo.start_session("cli") if repo else None

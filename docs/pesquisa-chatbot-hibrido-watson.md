@@ -4,6 +4,12 @@
 
 ---
 
+**Proposta de arquitetura (diagrama + search em Action + CTAs):** ver **`docs/proposta-arquitetura-hibrida-poc.md`**.
+
+**Plano de ação em etapas (Assistant, SDK, consolidação):** ver **`docs/plano-de-acao-poc-hibrida.md`**.
+
+---
+
 ## Contexto
 
 Hoje o chatbot corporativo é construído no **Watson Assistant**, com **árvore de decisão** e fluxos por menus: o usuário **caminha** até obter o serviço. Não há **conversa aberta** com modelo generativo; o comportamento é essencialmente **determinístico**.
